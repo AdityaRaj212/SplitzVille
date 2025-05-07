@@ -1,40 +1,71 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, User, LogIn } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const AuthForm = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1500);
+    
+    // Simulate login/registration process
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Success!",
+        description: "You have successfully signed in.",
+      });
+      navigate('/');
+    }, 1500);
   };
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center">
-      <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-8 shadow-lg">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold">SettleShare</h1>
-          <p className="text-gray-500">Split expenses with friends & family</p>
+    <Card className="w-full max-w-md overflow-hidden border-none shadow-lg animate-fade-in">
+      <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-background -z-10" />
+      
+      <CardHeader className="space-y-1 text-center">
+        <div className="flex justify-center mb-2">
+          <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
+            <LogIn className="h-6 w-6 text-white" />
+          </div>
         </div>
-        
+        <CardTitle className="text-2xl font-bold">SplitzVille</CardTitle>
+        <p className="text-sm text-muted-foreground">Split expenses with friends & family</p>
+      </CardHeader>
+      
+      <CardContent>
         <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="register">Register</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="login" className="mt-6">
+          <TabsContent value="login" className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="name@example.com" required />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="name@example.com" 
+                    className="pl-10" 
+                    required 
+                  />
+                </div>
               </div>
+              
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Label htmlFor="password">Password</Label>
@@ -42,28 +73,65 @@ const AuthForm = () => {
                     Forgot password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    className="pl-10" 
+                    required 
+                  />
+                </div>
               </div>
+              
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Sign in"}
+                {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
           </TabsContent>
           
-          <TabsContent value="register" className="mt-6">
+          <TabsContent value="register" className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="register-name">Full Name</Label>
-                <Input id="register-name" type="text" required />
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="register-name" 
+                    type="text" 
+                    className="pl-10" 
+                    required 
+                  />
+                </div>
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="register-email">Email</Label>
-                <Input id="register-email" type="email" placeholder="name@example.com" required />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="register-email" 
+                    type="email" 
+                    placeholder="name@example.com" 
+                    className="pl-10" 
+                    required 
+                  />
+                </div>
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="register-password">Password</Label>
-                <Input id="register-password" type="password" required />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="register-password" 
+                    type="password" 
+                    className="pl-10" 
+                    required 
+                  />
+                </div>
               </div>
+              
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating account..." : "Create account"}
               </Button>
@@ -71,16 +139,16 @@ const AuthForm = () => {
           </TabsContent>
         </Tabs>
 
-        <div className="relative">
+        <div className="relative mt-6">
           <div className="absolute inset-0 flex items-center">
             <Separator className="w-full" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-6">
           <Button variant="outline" className="w-full" type="button">
             <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z" />
@@ -94,8 +162,17 @@ const AuthForm = () => {
             Facebook
           </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+      
+      <CardFooter className="flex justify-center text-sm text-muted-foreground pt-0">
+        <p>
+          By signing up, you agree to our 
+          <a href="#" className="text-primary hover:underline mx-1">Terms of Service</a>
+          and
+          <a href="#" className="text-primary hover:underline ml-1">Privacy Policy</a>.
+        </p>
+      </CardFooter>
+    </Card>
   );
 };
 
