@@ -1,73 +1,146 @@
-# Welcome to your Lovable project
+# SplitzVille
 
-## Project info
+**SplitzVille** is a modern, full-stack web application that makes splitting group expenses easy, transparent, and fun. Designed for friends, roommates, and teams, SplitzVille helps you track, manage, and settle shared expenses effortlessly.
 
-**URL**: https://lovable.dev/projects/27589689-0309-42a0-8d74-29820208dbc8
+---
 
-## How can I edit this code?
+## 🚀 Demo
+Will be added soon
+[Live Demo Link](https://your-demo-url.com)
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 📝 Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/27589689-0309-42a0-8d74-29820208dbc8) and start prompting.
+- **User Authentication:** Secure signup, login, and email verification
+- **Group Management:** Create groups for trips, roommates, or events
+- **Expense Tracking:** Add, edit, and split expenses equally or unequally
+- **Real-Time Balances:** Instantly see who owes whom
+- **Settlements:** Settle up debts with clear transaction history
+- **Analytics:** Visualize spending by group or category (coming soon)
+- **Responsive UI:** Works beautifully on mobile and desktop
+- **Secure:** Passwords hashed, JWT authentication, and secure API practices
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🛠️ Tech Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+**Frontend:**
+- React (TypeScript, Vite)
+- Tailwind CSS
+- React Router
+- Lucide Icons
+- Framer Motion (for animations)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+**Backend:**
+- Node.js + Express
+- PostgreSQL (hosted on Supabase or other cloud provider)
+- Sequelize ORM
+- JWT for authentication
+- Nodemailer for transactional emails
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## ⚡ Getting Started
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 1. **Clone the repository**
+```
+git clone https://github.com/yourusername/splitzville.git
+cd splitzville
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 2. **Set up the backend**
+```
+cd backend
+cp .env.example .env
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Fill in your Postgres/Supabase and SMTP credentials in .env
+```
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### 3. **Set up the frontend**
+```
+cd ../frontend
+cp .env.example .env
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Set your backend API URL in .env
+```
+npm install
+npm run dev
+```
 
-**Use GitHub Codespaces**
+### 4. **Access the app**
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Open [http://localhost:5173](http://localhost:5173) (or as shown in your terminal) in your browser.
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## ⚙️ Configuration
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+**Backend `.env` example:**
+```
+DB_NAME=your_db_name
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=your_db_host
+DB_PORT=5432
+JWT_SECRET=your_jwt_secret
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+SMTP_FROM=your_email@gmail.com
+FRONTEND_URL=http://localhost:5173
+BACKEND_URL=http://localhost:5000
+```
 
-## How can I deploy this project?
+**Frontend `.env` example:**
+```
+VITE_API_URL=http://localhost:5000/api
+```
 
-Simply open [Lovable](https://lovable.dev/projects/27589689-0309-42a0-8d74-29820208dbc8) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## 📦 Folder Structure
+```
+splitzville/
+│
+├── backend/
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   ├── middlewares/
+│   ├── utils/
+│   ├── config/
+│   └── app.js
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── routes/
+│   │   └── App.tsx
+│   └── public/
+│
+└── README.md
+```
 
-Yes, you can!
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 🧑‍💻 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss your ideas.
+---
+
+## 📬 Contact
+
+For questions, feedback, or support, please open an issue or email [webdev.by.adi@gmail.com](mailto:webdev.by.adi@gmail.com).
+
+---
+
+**Enjoy using SplitzVille to make group expenses easy, fair, and stress-free!**
