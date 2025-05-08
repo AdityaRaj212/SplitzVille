@@ -64,7 +64,7 @@ const Sidebar = () => {
           <h1 className={cn(
             "text-xl font-bold",
             theme === 'dark' ? "text-sidebar-foreground" : "text-sidebar-foreground"
-          )}>SettleShare</h1>
+          )}>SplitzVille</h1>
         )}
         <Button 
           variant="ghost" 
@@ -80,7 +80,7 @@ const Sidebar = () => {
 
       <div className="flex-1 py-4 overflow-y-auto">
         <nav className="px-2 space-y-1">
-          <SidebarLink to="/" icon={<Home size={20} />} label="Dashboard" collapsed={collapsed} isActive={location.pathname === '/'} />
+          <SidebarLink to="/dashboard" icon={<Home size={20} />} label="Dashboard" collapsed={collapsed} isActive={location.pathname === '/'} />
           <SidebarLink to="/groups" icon={<Users size={20} />} label="My Groups" collapsed={collapsed} isActive={location.pathname === '/groups'} />
           <SidebarLink to="/expenses" icon={<Receipt size={20} />} label="Expenses" collapsed={collapsed} isActive={location.pathname === '/expenses'} />
           <SidebarLink to="/profile" icon={<User size={20} />} label="Profile" collapsed={collapsed} isActive={location.pathname === '/profile'} />

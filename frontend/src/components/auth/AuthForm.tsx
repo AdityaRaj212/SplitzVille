@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,19 +15,77 @@ const AuthForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     setIsLoading(true);
-    
-    // Simulate login/registration process
-    setTimeout(() => {
-      setIsLoading(false);
+    console.log('init');
+    event.preventDefault();
+    try{
+      const formData = new FormData(event.currentTarget);
+      const email = formData.get('email')?.toString();
+      const password = formData.get('password')?.toString();
+      const firstName = formData.get('register-first-name')?.toString();
+      const lastName = formData.get('register-last-name')?.toString();
+
+      if (!email || !password) {
+        toast({
+          title: "Error!",
+          description: "Please fill in all fields.",
+          variant: "destructive",
+        });
+        console.log('here')
+        console.log(email);
+        return;
+      }
+
+      if (event.currentTarget.id === 'register') {
+        // Register user
+        axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, { email, password, firstName, lastName })
+          .then(response => {
+            toast({
+              title: "Success!",
+              description: "You have successfully registered.",
+            });
+            navigate('/dashboard');
+          })
+          .catch(error => {
+            toast({
+              title: "Error!",
+              description: error.response.data.msg,
+              variant: "destructive",
+            });
+          }).finally(()=>{
+            setIsLoading(false);
+          }
+        );
+      } else {
+        // Login user
+        axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, { email, password })
+          .then(response => {
+            toast({
+              title: "Success!",
+              description: "You have successfully signed in.",
+            });
+            navigate('/dashboard');
+          })
+          .catch(error => {
+            console.error(error);
+            toast({
+              title: "Error!",
+              description: error.response.data.msg,
+              variant: "destructive",
+            });
+          }).finally(()=>{
+            setIsLoading(false);
+          });
+      }
+    }catch(error){
       toast({
-        title: "Success!",
-        description: "You have successfully signed in.",
+        title: "Error!",
+        description: "An error occurred while signing in.",
+        variant: "destructive",
       });
-      navigate('/');
-    }, 1500);
+      console.error(error);
+    };
   };
 
   return (
@@ -51,13 +110,14 @@ const AuthForm = () => {
           </TabsList>
           
           <TabsContent value="login" className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" id="login">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="email" 
+                    name="email"
                     type="email" 
                     placeholder="name@example.com" 
                     className="pl-10" 
@@ -77,6 +137,7 @@ const AuthForm = () => {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="password" 
+                    name="password" 
                     type="password" 
                     className="pl-10" 
                     required 
@@ -91,17 +152,33 @@ const AuthForm = () => {
           </TabsContent>
           
           <TabsContent value="register" className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="register-name">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="register-name" 
-                    type="text" 
-                    className="pl-10" 
-                    required 
-                  />
+            <form onSubmit={handleSubmit} className="space-y-4" id="register">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-first-name">First Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="register-first-name" 
+                      name="register-first-name" 
+                      type="text" 
+                      className="pl-10" 
+                      required 
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="register-last-name">Last Name</Label>
+                  <div className="relative">
+                    <Input 
+                      id="register-last-name" 
+                      name="register-last-name" 
+                      type="text" 
+                      className="pl-3" 
+                      required 
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -111,6 +188,7 @@ const AuthForm = () => {
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="register-email" 
+                    name="register-email" 
                     type="email" 
                     placeholder="name@example.com" 
                     className="pl-10" 
@@ -125,6 +203,7 @@ const AuthForm = () => {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="register-password" 
+                    name="register-password" 
                     type="password" 
                     className="pl-10" 
                     required 
@@ -137,6 +216,7 @@ const AuthForm = () => {
               </Button>
             </form>
           </TabsContent>
+
         </Tabs>
 
         <div className="relative mt-6">
