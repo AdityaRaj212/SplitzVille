@@ -44,7 +44,7 @@ const BalanceSummary = ({ className, totalOwed, totalOwe }: BalanceSummaryProps)
           </div>
           
           <div className={cn(
-            "h-16 w-16 rounded-full flex items-center justify-center text-white",
+            "h-16 w-16 rounded-full flex items-center justify-center text-white text-4xl",
             netBalance > 0 ? "bg-expense-owed" : 
             netBalance < 0 ? "bg-expense-owe" : 
             "bg-expense-neutral"

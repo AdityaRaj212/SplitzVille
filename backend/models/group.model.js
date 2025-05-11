@@ -18,7 +18,15 @@ const Group = sequelize.define("Group", {
     ownerId: {
         type: DataTypes.UUID,
         allowNull: false,
-    }
+    }, 
+    createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+    },
 }, {
     timestamps: true,
     paranoid: true

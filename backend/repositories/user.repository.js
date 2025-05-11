@@ -1,4 +1,4 @@
-import User from "../models/user.model.js";
+import {User} from "../models/index.model.js";
 
 export default class UserRepository {
     constructor() {

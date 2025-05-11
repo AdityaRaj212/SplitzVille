@@ -1,4 +1,4 @@
-import Expense from "../models/expense.model.js";
+import {Expense} from "../models/index.model.js";
 
 export default class ExpenseRepository {
     constructor() {

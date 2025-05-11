@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import sequelize from './config/db.js';
 import expenseRouter from './routes/expense.routes.js';
 import authRouter from './routes/auth.routes.js';
+import groupRouter from './routes/group.routes.js';
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(cors());
 app.use('/images', express.static('uploads'));
 app.use('/api/expense', expenseRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/group', groupRouter);
 app.get('/', (req, res) => {
     res.send('API is running...');  
 });

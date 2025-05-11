@@ -23,7 +23,11 @@ const Expense = sequelize.define("Expense", {
         type: DataTypes.TEXT,
         allowNull: true,
     },
-    group: {
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: false
+    },
+    groupId: {
         type: DataTypes.UUID,
         allowNull: false,
     }
