@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import GroupList from '@/components/dashboard/GroupList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,8 @@ const Groups = () => {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingGroups, setIsFetchingGroups] = useState(false);
+  const [groups, setGroups] = useState([]);
   const [groupData, setGroupData] = useState({
     name: '',
     description: '',
@@ -27,10 +29,9 @@ const Groups = () => {
     setIsLoading(true);
 
     try {
-      // Replace with your actual API endpoint
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/group/create-group`, {
         ...groupData,
-        ownerId: user?.id, // Replace with actual user ID from auth context or state
+        ownerId: user?.id,
       });
       
       toast({
@@ -38,7 +39,7 @@ const Groups = () => {
         description: "Group created successfully.",
       });
       setIsModalOpen(false);
-      // Optionally, refresh group list or add the new group to state
+      fetchGroups();
       console.log('New group created:', response.data);
     } catch (error: any) {
       toast({
@@ -56,30 +57,37 @@ const Groups = () => {
     setGroupData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Updated the groups data to match the expected type with initials and memberCount
-  const groups = [
-    {
-      id: '1',
-      name: 'Roommates',
-      initials: 'RM',
-      memberCount: 3,
-      balance: 120.75,
-    },
-    {
-      id: '2',
-      name: 'Trip to Paris',
-      initials: 'TP',
-      memberCount: 3,
-      balance: -45.50,
-    },
-    {
-      id: '3',
-      name: 'Office Lunch',
-      initials: 'OL',
-      memberCount: 2,
-      balance: 0,
+  const fetchGroups = async () => {
+    if (!user || !user.id) {
+      toast({
+        title: "Error!",
+        description: "User not authenticated. Please log in.",
+        variant: "destructive",
+      });
+      return;
     }
-  ];
+
+    setIsFetchingGroups(true);
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/group/user/${user.id}`);
+      const fetchedGroups = response.data.groups || response.data || [];
+      setGroups(fetchedGroups);
+      console.log('Groups fetched:', fetchedGroups);
+    } catch (error) {
+      toast({
+        title: "Error!",
+        description: "Failed to fetch groups.",
+        variant: "destructive",
+      });
+      console.error('Error fetching groups:', error);
+    } finally {
+      setIsFetchingGroups(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGroups();
+  }, [user?.id]); 
 
   return (
     <Layout>
@@ -137,7 +145,13 @@ const Groups = () => {
             <CardTitle>All Groups</CardTitle>
           </CardHeader>
           <CardContent>
-            <GroupList groups={groups} />
+            {isFetchingGroups ? (
+              <div className="text-center text-muted-foreground">Loading groups...</div>
+            ) : groups.length === 0 ? (
+              <div className="text-center text-muted-foreground">No groups found. Create one to get started!</div>
+            ) : (
+              <GroupList groups={groups} />
+            )}
           </CardContent>
         </Card>
       </div>

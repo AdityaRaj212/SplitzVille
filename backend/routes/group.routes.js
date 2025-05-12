@@ -12,6 +12,10 @@ router.get('/:groupId', (req, res)=>{
     groupController.getGroup(req, res);
 });
 
+router.get('/user/:userId', (req, res)=>{
+    groupController.getGroupsByUserId(req, res);
+});
+
 router.put('/update-group', (req, res)=>{
     groupController.updateGroup(req, res);
 });

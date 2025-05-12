@@ -1,38 +1,56 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import BalanceSummary from '@/components/dashboard/BalanceSummary';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import GroupList from '@/components/dashboard/GroupList';
 import ExpenseList from '@/components/expenses/ExpenseList';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isFetchingGroups, setIsFetchingGroups] = useState(false);
+  const [groups, setGroups] = useState([]);
+
+  const fetchGroups = async () => {
+    if (!user || !user.id) {
+      toast({
+        title: "Error!",
+        description: "User not authenticated. Please log in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsFetchingGroups(true);
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/group/user/${user.id}`);
+      const fetchedGroups = response.data.groups || response.data || [];
+      setGroups(fetchedGroups);
+      console.log('Groups fetched:', fetchedGroups);
+    } catch (error) {
+      toast({
+        title: "Error!",
+        description: "Failed to fetch groups.",
+        variant: "destructive",
+      });
+      console.error('Error fetching groups:', error);
+    } finally {
+      setIsFetchingGroups(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGroups();
+  }, [user?.id]);
+
   // Mock data for demonstration purposes
-  const mockGroups = [
-    { 
-      id: "1", 
-      name: "Summer Trip 2023", 
-      initials: "ST", 
-      memberCount: 5, 
-      balance: 123.45 
-    },
-    { 
-      id: "2", 
-      name: "Apartment", 
-      initials: "AP", 
-      memberCount: 3, 
-      balance: -45.67 
-    },
-    { 
-      id: "3", 
-      name: "Dinner Club", 
-      initials: "DC", 
-      memberCount: 6, 
-      balance: 0 
-    },
-  ];
-  
   const mockActivities = [
     { 
       id: "1", 
@@ -114,6 +132,39 @@ const Index = () => {
     }
   ];
 
+  // Skeleton for GroupList while loading
+  const GroupListSkeleton = () => (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+        <CardTitle className="text-lg font-medium">My Groups</CardTitle>
+        <Button variant="ghost" size="sm" disabled>Loading...</Button>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="group-card overflow-hidden border border-muted rounded-lg">
+              <div className="flex items-center p-4 gap-4 animate-pulse">
+                <Avatar className="h-12 w-12 bg-muted">
+                  <AvatarFallback>SV</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted w-3/4 rounded"></div>
+                  <div className="h-3 bg-muted w-1/2 rounded"></div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <div className="h-4 bg-muted w-16 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div className="group-card flex items-center justify-center p-8 border-dashed border-2 border-muted rounded-lg animate-pulse">
+            <div className="h-8 w-8 bg-muted rounded-full"></div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <Layout>
       <div className="mb-8">
@@ -134,7 +185,15 @@ const Index = () => {
       </div>
       
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GroupList groups={mockGroups} />
+        {isFetchingGroups ? (
+          <GroupListSkeleton />
+        ) : groups.length === 0 ? (
+          <div className="text-center text-muted-foreground p-6 bg-card rounded-lg shadow-sm">
+            No groups found. Create one to get started!
+          </div>
+        ) : (
+          <GroupList groups={groups} />
+        )}
         <ExpenseList expenses={mockExpenses} />
       </div>
     </Layout>

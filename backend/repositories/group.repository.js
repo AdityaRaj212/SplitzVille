@@ -1,5 +1,6 @@
 import {Group} from '../models/index.model.js';
 import {User} from '../models/index.model.js';
+import {Expense} from '../models/index.model.js';
 
 export default class groupRepository {
     constructor() {
@@ -28,6 +29,31 @@ export default class groupRepository {
 
     async getGroupByName(groupName) {
         return this.group.findOne({ where: { name: groupName } });
+    }
+
+    async getGroupsByUserId(userId) {
+        try{
+            const user = await User.findOne({
+                where: { id: userId },
+                include: [
+                    { 
+                        model: Group, 
+                        as: 'groups',
+                        include: [
+                            { model: User, as: 'members', attributes: ['id', 'firstName', 'lastName', 'email'] },
+                            { model: Expense, as: 'expenses' }
+                        ]
+                    }]
+            });
+    
+            if(!user){
+                throw new Error('User not found');
+            }
+    
+            return user.groups || [];
+        }catch(error){
+            throw new Error(`Error fetching group by user ID: ${error.message}`);
+        }
     }
 
     async getGroupById(groupId) {

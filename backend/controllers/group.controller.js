@@ -1,4 +1,5 @@
 import groupRepository from "../repositories/group.repository.js";
+import User from "../models/user.model.js";
 
 export default class GroupController {
     constructor() {
@@ -9,6 +10,13 @@ export default class GroupController {
         try {
             const groupData = req.body;
             const group = await this.groupRepository.createGroup(groupData);
+
+            const owner = await User.findOne({ where: { id: groupData.ownerId } });
+            if(owner){
+                await group.addMember(owner);
+            }else{
+                console.warn(`Owner with ID ${groupData.ownerId} not found. Group created without owner.`);
+            }
             return res.status(201).json(group);
         } catch (error) {
             return res.status(500).json({ message: error.message });
@@ -35,6 +43,21 @@ export default class GroupController {
             return res.status(500).json({ message: error.message });    
         }
     }
+
+    async getGroupsByUserId(req, res) {
+        try {
+            const userId = req.params.userId;
+            const groups = await this.groupRepository.getGroupsByUserId(userId);
+            if (!groups) {
+                return res.status(404).json({ message: "No groups found for this user" });
+            }
+            return res.status(200).json(groups);
+        }
+        catch (error) {
+            return res.status(500).json({ message: error.message });
+        }
+    }
+
     async updateGroup(req, res) {
         try {
             const groupId = req.params.groupId;

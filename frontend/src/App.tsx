@@ -9,6 +9,7 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Groups from "./pages/Groups";
+import GroupDetail from "./pages/GroupDetail";
 import Expenses from "./pages/Expenses";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Index />} />
               <Route path="/groups" element={<Groups />} />
+              <Route path="/groups/:groupId" element={<GroupDetail />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
