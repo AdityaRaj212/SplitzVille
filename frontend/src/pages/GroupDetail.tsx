@@ -63,11 +63,23 @@ const GroupDetail = () => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/group/${groupId}`);
-      // setMembers(response.data.members);
-      console.log('group members: ', response.data.group.members);
       setMembers(response.data.group.members);
+      setGroup({
+        id: response.data.group.id,
+        name: response.data.group.name,
+        initials: response.data.group.name.includes(' ')
+          ? `${response.data.group.name.split(' ')[0][0]}${response.data.group.name.split(' ').slice(-1)[0][0]}`.toUpperCase()
+          : response.data.group.name.slice(0, 2).toUpperCase(),
+        description: response.data.group.description,
+        image: '',
+        memberCount: response.data.group.members.length,
+        balance: 120.75,
+        totalSpent: 1250.50,
+        createdAt: response.data.group.createdAt,
+      });
+      setIsLoading(false);
       setTimeout(() => {
-        setGroup(dummyGroup);
+        // setGroup(dummyGroup);
         // setMembers(dummyMembers);
         setTransactions(dummyTransactions);
         setIsLoading(false);
