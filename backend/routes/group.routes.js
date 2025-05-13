@@ -27,7 +27,7 @@ router.get('/all-groups', (req, res)=>{
     groupController.getAllGroups(req, res);
 });
 
-router.post('/add-member', (req, res)=>{
+router.post('/add-member/:groupId', (req, res)=>{
     groupController.addMember(req ,res);
 });
 

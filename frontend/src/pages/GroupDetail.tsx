@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,9 +26,9 @@ const dummyGroup = {
 };
 
 const dummyMembers = [
-  { id: 'm1', name: 'Alice Smith', email: 'alice@example.com', balance: 40.25, image: '' },
-  { id: 'm2', name: 'Bob Johnson', email: 'bob@example.com', balance: -60.50, image: '' },
-  { id: 'm3', name: 'Charlie Brown', email: 'charlie@example.com', balance: 20.25, image: '' },
+  { id: 'm1', firstName: 'Alice Smith', email: 'alice@example.com', balance: 40.25, image: '' },
+  { id: 'm2', firstName: 'Bob Johnson', email: 'bob@example.com', balance: -60.50, image: '' },
+  { id: 'm3', firstName: 'Charlie Brown', email: 'charlie@example.com', balance: 20.25, image: '' },
 ];
 
 const dummyTransactions = [
@@ -48,6 +48,9 @@ const GroupDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Fetch group data (replace with real API call)
   useEffect(() => {
@@ -74,24 +77,113 @@ const GroupDetail = () => {
     fetchGroupData();
   }, [groupId, toast]);
 
-  const handleAddMember = () => {
-    // Simulate adding a member (replace with real API call)
-    if (!newMemberEmail) {
-      toast({
-        title: "Error!",
-        description: "Please enter an email address.",
-        variant: "destructive",
-      });
+  const debouncedSearch = useCallback(async (term: string) => {
+    if (!term) {
+      setSearchResults([]);
+      setIsSearching(false);
       return;
     }
-    toast({
-      title: "Success!",
-      description: `Invited ${newMemberEmail} to the group!`,
-    });
-    setNewMemberEmail('');
-    setIsAddMemberModalOpen(false);
-  };
+    setIsSearching(true);
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/smart-search`, {
+        params: { query: term, groupId },
+      });
+      if (response.data.success) {
+        setSearchResults(response.data.users || []);
+      } else {
+        toast({
+          title: "Error!",
+          description: "Failed to search users.",
+          variant: "destructive",
+        });
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+      toast({
+        title: "Error!",
+        description: "Failed to search users.",
+        variant: "destructive",
+      });
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [toast]);
 
+  // Trigger search on input change with debouncing
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      debouncedSearch(searchTerm);
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, debouncedSearch]);
+
+  const handleAddMember = async (userId?: string, email?: string) => {
+    try {
+      if (userId) {
+        // Adding an existing user (mock implementation)
+        const user = searchResults.find(u => u.id === userId);
+        if (user) {
+          try{
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/group/add-member/${groupId}`, {
+              userId: user.id,
+            });
+            if (response.data.success) {
+              toast({
+                title: "Success!",
+                description: `${user.firstName || user.name} added to the group!`,
+              });
+            }else{
+              toast({
+                title: "Error!",
+                description: "Failed to add member.",
+                variant: "destructive",
+              });
+            }
+          }catch(error){
+            console.error('Error adding member:', error);
+            toast({
+              title: "Error!",
+              description: "Failed to add member.",
+              variant: "destructive",
+            });
+          }
+
+          setMembers(prev => [...prev, user]);
+        }
+      } else if (email) {
+        // Inviting a new user via email
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/invite-user`, {
+          email,
+          groupName: group?.name || 'Unnamed Group',
+        });
+        if (response.data.success) {
+          toast({
+            title: "Success!",
+            description: `Invited ${email} to join the platform and group!`,
+          });
+        } else {
+          toast({
+            title: "Error!",
+            description: response.data.msg || "Failed to send invitation.",
+            variant: "destructive",
+          });
+        }
+      }
+      setSearchTerm('');
+      setSearchResults([]);
+      setIsAddMemberModalOpen(false);
+    } catch (error) {
+      console.error('Error adding/inviting member:', error);
+      toast({
+        title: "Error!",
+        description: "Failed to add or invite member.",
+        variant: "destructive",
+      });
+    }
+  };
   const handleRemoveMember = (memberId: string, memberName: string) => {
     // Simulate removing a member (replace with real API call)
     toast({
@@ -193,6 +285,92 @@ const GroupDetail = () => {
             <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm" onClick={handleSettleUp}>
               <TrendingUp className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" /> Settle Up
             </Button>
+
+            {/* <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm">
+                  <UserPlus className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" /> Add Member
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Member</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
+                  <div className="space-y-1 sm:space-y-2">
+                    <label htmlFor="searchEmail" className="text-xs sm:text-sm font-medium">Search or Invite by Email</label>
+                    <Input
+                      id="searchEmail"
+                      value={newMemberEmail}
+                      onChange={(e) => setNewMemberEmail(e.target.value)}
+                      placeholder="Type to search users or enter email to invite"
+                      className="text-xs sm:text-sm"
+                      autoComplete="off"
+                    />
+                    <p className="text-xs text-muted-foreground">Start typing to see suggestions or enter a full email to invite.</p>
+                    
+                    {newMemberEmail && (
+                      <div className="border rounded-md shadow-sm max-h-40 overflow-y-auto bg-background">
+                        
+                        {dummyMembers
+                          .filter(m => m.email.toLowerCase().includes(newMemberEmail.toLowerCase()) || m.name.toLowerCase().includes(newMemberEmail.toLowerCase()))
+                          .slice(0, 5)
+                          .map(user => (
+                            <div
+                              key={user.id}
+                              className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2 text-xs sm:text-sm"
+                              onClick={() => {
+                               
+                                toast({
+                                  title: "Success!",
+                                  description: `${user.name} added to the group!`,
+                                });
+                                setNewMemberEmail('');
+                                setIsAddMemberModalOpen(false);
+                              }}
+                            >
+                              <Avatar className="h-6 w-6 sm:h-8 sm:w-8 bg-primary/10">
+                                <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">{user.name}</div>
+                                <div className="text-xs text-muted-foreground">{user.email}</div>
+                              </div>
+                            </div>
+                          ))}
+                        {newMemberEmail.includes('@') && (
+                          <div
+                            className="p-2 hover:bg-muted cursor-pointer text-xs sm:text-sm border-t border-muted"
+                            onClick={() => {
+                              toast({
+                                title: "Success!",
+                                description: `Invited ${newMemberEmail} to join the platform and group!`,
+                              });
+                              setNewMemberEmail('');
+                              setIsAddMemberModalOpen(false);
+                            }}
+                          >
+                            <span className="font-medium">Invite {newMemberEmail} to join</span>
+                            <div className="text-xs text-muted-foreground">This user will receive an email invitation.</div>
+                          </div>
+                        )}
+                        {newMemberEmail && dummyMembers.every(m => !m.email.toLowerCase().includes(newMemberEmail.toLowerCase()) && !m.name.toLowerCase().includes(newMemberEmail.toLowerCase())) && !newMemberEmail.includes('@') && (
+                          <div className="p-2 text-xs sm:text-sm text-muted-foreground text-center">
+                            No matching users found. Enter a full email to invite.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-1 sm:gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsAddMemberModalOpen(false)}>Cancel</Button>
+                    <Button size="sm" onClick={handleAddMember} disabled={!newMemberEmail || !newMemberEmail.includes('@')}>
+                      Send Invite
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog> */}
             <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
               <DialogTrigger asChild>
                 <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm">
@@ -205,23 +383,69 @@ const GroupDetail = () => {
                 </DialogHeader>
                 <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
                   <div className="space-y-1 sm:space-y-2">
-                    <label htmlFor="email" className="text-xs sm:text-sm font-medium">Email Address</label>
+                    <label htmlFor="searchEmail" className="text-xs sm:text-sm font-medium">Search or Invite by Email</label>
                     <Input
-                      id="email"
-                      value={newMemberEmail}
-                      onChange={(e) => setNewMemberEmail(e.target.value)}
-                      placeholder="friend@example.com"
+                      id="searchEmail"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Type to search users or enter email to invite"
                       className="text-xs sm:text-sm"
+                      autoComplete="off"
                     />
-                    <p className="text-xs text-muted-foreground">We'll send an invite link to this email.</p>
+                    <p className="text-xs text-muted-foreground">Start typing to see suggestions or enter a full email to invite.</p>
+                    {/* Search suggestions */}
+                    {searchTerm && (
+                      <div className="border rounded-md shadow-sm max-h-40 overflow-y-auto bg-background">
+                        {isSearching ? (
+                          <div className="p-2 text-xs sm:text-sm text-muted-foreground text-center animate-pulse">
+                            Searching users...
+                          </div>
+                        ) : searchResults.length > 0 ? (
+                          searchResults.map(user => (
+                            <div
+                              key={user.id}
+                              className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2 text-xs sm:text-sm"
+                              onClick={() => handleAddMember(user.id)}
+                            >
+                              <Avatar className="h-6 w-6 sm:h-8 sm:w-8 bg-primary/10">
+                                <AvatarFallback>{(user.firstName || user.name || '').split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">{user.firstName || user.name}</div>
+                                <div className="text-xs text-muted-foreground">{user.email}</div>
+                              </div>
+                            </div>
+                          ))
+                        ) : searchTerm.includes('@') ? (
+                          <div
+                            className="p-2 hover:bg-muted cursor-pointer text-xs sm:text-sm border-t border-muted"
+                            onClick={() => handleAddMember(undefined, searchTerm)}
+                          >
+                            <span className="font-medium">Invite {searchTerm} to join</span>
+                            <div className="text-xs text-muted-foreground">This user will receive an email invitation.</div>
+                          </div>
+                        ) : (
+                          <div className="p-2 text-xs sm:text-sm text-muted-foreground text-center">
+                            No matching users found. Enter a full email to invite.
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex justify-end gap-1 sm:gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setIsAddMemberModalOpen(false)}>Cancel</Button>
-                    <Button size="sm" onClick={handleAddMember}>Send Invite</Button>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      setSearchTerm('');
+                      setSearchResults([]);
+                      setIsAddMemberModalOpen(false);
+                    }}>Cancel</Button>
+                    <Button size="sm" onClick={() => handleAddMember(undefined, searchTerm)} disabled={!searchTerm || !searchTerm.includes('@')}>
+                      Send Invite
+                    </Button>
                   </div>
                 </div>
               </DialogContent>
             </Dialog>
+
             <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm" onClick={handleAddExpense}>
               <Plus className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" /> Add Expense
             </Button>
@@ -319,9 +543,9 @@ const GroupDetail = () => {
                     <div key={member.id} className="flex items-center justify-between p-1 sm:p-2 hover:bg-muted/50 rounded-md transition-colors">
                       <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
                         <Avatar className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 bg-primary/10">
-                          <AvatarImage src={member.image} alt={member.name} />
+                          <AvatarImage src={member.image} alt={member.firstName} />
                           <AvatarFallback className="bg-gradient-to-br from-pink-400 to-violet-600 text-white text-xs sm:text-sm">
-                            {member.name.split(' ').map(n => n[0]).join('')}
+                            {member.firstName.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div className="overflow-hidden">
@@ -330,9 +554,9 @@ const GroupDetail = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
-                      <Badge variant={member.balance > 0 ? "default" : member.balance < 0 ? "destructive" : "secondary"} className="text-[9px] sm:text-[10px] md:text-xs">
+                      {/* <Badge variant={member.balance > 0 ? "default" : member.balance < 0 ? "destructive" : "secondary"} className="text-[9px] sm:text-[10px] md:text-xs">
   {member.balance > 0 ? '+' : ''}{member.balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-</Badge>
+</Badge> */}
 <Button
   size="sm"
   variant="ghost"

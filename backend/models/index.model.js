@@ -6,6 +6,6 @@ Group.belongsToMany(User, {through: "GroupMembers", as: "members"});
 User.belongsToMany(Group, {through: "GroupMembers", as: "groups"});
 
 Group.hasMany(Expense, { foreignKey: "groupId", as: "expenses" });
-Expense.belongsTo(Group, { foreignKey: "groupId", as: "group" });
+Expense.belongsTo(Group, { foreignKey: "groupId", as: "group" }); 
 
 export {Group, User, Expense};

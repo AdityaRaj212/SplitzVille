@@ -23,6 +23,25 @@ const transporter = nodemailer.createTransport({
 //   });
 // };
 
+export const sendInvitationEmail = async (email, groupName, inviterName) => {
+  const inviteLink = `${process.env.FRONTEND_URL}/auth`;
+    const mailOptions = {
+      from: process.env.SMTP_FROM || 'no-reply@splitzville.com',
+      to: email,
+      subject: `${inviterName} invited you to join SplitzVille!`,
+      html: `
+        <p>Hi,</p>
+        <p>${inviterName} has invited you to join a group - ${groupName} on SplitzVille.</p>
+        <p>Click <a href="${inviteLink}">here</a> to accept the invitation and join the group.</p>
+        <p>If you don't have an account, you will be prompted to create one.</p>
+        <p>Thanks,<br/>The SplitzVille Team</p>
+      `,
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+}
+
 export const sendVerificationEmail = async (email, token) => {
   const verificationUrl = `${process.env.BACKEND_URL}/api/auth/verify-email-final-step/${email}`;
   

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import { v4 as uuidv4 } from "uuid";
 import { sendEmail } from "../utils/email.utils.js";
+import { sendInvitationEmail } from "../utils/email.utils.js";
 import { generateToken } from "../utils/token.utils.js";
 import { createError } from "../utils/error.utils.js";
 import { UserStatus } from "../utils/constants.utils.js";
@@ -24,7 +25,6 @@ export default class AuthController {
 
         try {
             const existingUser = await this.userRepository.getUserByEmail(email);
-            console.log('here')
 
             if (existingUser) {
                 return res.status(409).json({
@@ -89,18 +89,9 @@ export default class AuthController {
         try{
             await this.userRepository.updateUserByEmail(email, {isVerified: true});
             res.redirect(`${process.env.FRONTEND_URL}/verification-success`);
-            // return res.status(201).json({
-            //     success: true,
-            //     msg: 'Email is verified'
-            // })
         }catch(error){
             console.error(error);
             res.redirect(`${process.env.FRONTEND_URL}/verification-fail`);
-            // return res.status(500).json({
-            //     success: false,
-            //     msg: "Email verification failed",
-            //     error: error.message,
-            // });
         }
     }
 
@@ -139,54 +130,6 @@ export default class AuthController {
             });
         }
     }
-    // async verifyEmail(req, res) {
-    //     const { token } = req.params;
-
-    //     try {
-    //         const decoded = verifyToken(token);
-
-    //         if (!decoded) {
-    //             return res.status(400).json({
-    //                 success: false,
-    //                 msg: "Invalid or expired token",
-    //             });
-    //         }
-
-    //         const userVerification = await UserVerification.findOne({
-    //             where: {
-    //                 userId: decoded.userId,
-    //                 status: UserVerificationStatus.PENDING,
-    //                 verificationToken: token,
-    //             },
-    //         });
-
-    //         if (!userVerification) {
-    //             return res.status(400).json({
-    //                 success: false,
-    //                 msg: "Invalid or expired token",
-    //             });
-    //         }
-
-    //         await this.userRepository.updateUser(decoded.userId, {
-    //             status: UserStatus.ACTIVE,
-    //         });
-
-    //         await UserVerification.update(
-    //             { status: UserVerificationStatus.VERIFIED },
-    //             { where: { id: userVerification.id } }
-    //         );
-
-    //         return res.status(200).json({
-    //             success: true,
-    //             msg: "Email verified successfully",
-    //         });
-    //     } catch (error) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             msg: "Internal server error",
-    //         });
-    //     }
-    // }
     async resendVerificationEmail(req, res) {
         const { email } = req.body;
 
@@ -371,6 +314,41 @@ export default class AuthController {
             return res.status(200).json({
                 success: true,
                 users,
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                msg: "Internal server error",
+            });
+        }
+    }
+    async smartSearch(req, res) {
+        try {
+            const query = req.query.query;
+            const {groupId} = req.query;
+            const users = await this.userRepository.smartSearch(query, groupId);
+            return res.status(200).json({
+                success: true,
+                users,
+            });
+        }
+        catch (error) {
+            return res.status(500).json({
+                success: false,
+                msg: "Internal server error",
+                error: error.message
+            });
+        }
+    }
+    async inviteUser(req, res) {
+        const { email, groupName } = req.body;
+        const inviterName = req.user.userName;
+
+        try {
+            await sendInvitationEmail(email, groupName, inviterName);
+            return res.status(200).json({
+                success: true,
+                msg: "Invitation email sent successfully",
             });
         } catch (error) {
             return res.status(500).json({

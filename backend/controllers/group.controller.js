@@ -95,16 +95,33 @@ export default class GroupController {
     async addMember(req, res) {
         try {
             const groupId = req.params.groupId;
-            const { userId } = req.body;
-            const group = await this.groupRepository.findOne({ where: { id: groupId } });
-            if (!group) {
-                return res.status(404).json({ message: "Group not found" });
+            const { userId  } = req.body;
+
+            const group = await this.groupRepository.getGroup(groupId);
+
+            if(!group){
+                return res.status(404).json({
+                    success: false,
+                    message: "Group not found"
+                })
             }
-            group.members.push(userId);
-            await group.save();
-            return res.status(200).json(group);
+
+            const user = await User.findOne({where: {id: userId}});
+            if(!user){
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                })
+            }
+
+            await group.addMember(user);
+            return res.status(201).json({
+                success: true,
+                message: 'User added to the group',
+                group
+            })
         } catch (error) {
-            return res.status(500).json({ message: error.message });
+            return res.status(500).json({ message: error.message, error: error.message });
         }
     }
     async removeMember(req, res) {

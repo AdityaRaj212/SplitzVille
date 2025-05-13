@@ -25,6 +25,8 @@ router.delete('/profile', /*authMiddleware,*/ (req, res) => authController.delet
 
 // User management (admin or advanced user features)
 router.get('/users', /*authMiddleware,*/ (req, res) => authController.getAllUsers(req, res));
+router.get('/smart-search', /*authMiddleware,*/ (req, res) => authController.smartSearch(req, res));
+router.get('/invite-user', /*authMiddleware,*/ (req, res) => authController.inviteUser(req, res));
 router.get('/users/:userId', /*authMiddleware,*/ (req, res) => authController.getUserById(req, res));
 router.put('/users/:userId', /*authMiddleware,*/ (req, res) => authController.updateUser(req, res));
 router.delete('/users/:userId', /*authMiddleware,*/ (req, res) => authController.deleteUser(req, res));
