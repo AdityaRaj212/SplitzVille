@@ -26,21 +26,15 @@ export default class GroupController {
     async getGroup(req, res) {
         try {
             const groupId = req.params.groupId;
-            const group = await this.
-                groupRepository.findOne({ 
-                    where: { id: groupId }, 
-                    include: [
-                        {model: 'User', as: 'members', attributes: ['id', 'firstName', 'lastName', 'email']},
-                        {model: 'Expense', as: 'expenses'},
-                    ],
-                });
-            if (!group) {
-                return res.status(404).json({ message: "Group not found" });
-            }
-            return res.status(200).json(group);
+            const group = await this.groupRepository.getGroup(groupId);
+            return res.status(200).json({
+                success: true,
+                message: 'Group fetched successfully',
+                group
+            });
         }
         catch (error) {
-            return res.status(500).json({ message: error.message });    
+            return res.status(500).json({ success: false, message: error.message });    
         }
     }
 
@@ -121,22 +115,21 @@ export default class GroupController {
                 group
             })
         } catch (error) {
-            return res.status(500).json({ message: error.message, error: error.message });
+            return res.status(500).json({ success: false, message: error.message, error: error.message });
         }
     }
     async removeMember(req, res) {
         try {
             const groupId = req.params.groupId;
             const { userId } = req.body;
-            const group = await this.groupRepository.findOne({ where: { id: groupId } });
-            if (!group) {
-                return res.status(404).json({ message: "Group not found" });
-            }
-            group.members = group.members.filter(member => member !== userId);
-            await group.save();
-            return res.status(200).json(group);
+            const group = await this.groupRepository.removeMemberFromGroup(groupId, userId);
+            return res.status(200).json({
+                success: true,
+                message: 'User removed from the group',
+                group
+            });
         } catch (error) {
-            return res.status(500).json({ message: error.message });
+            return res.status(500).json({success: false, message: error.message });
         }
     }
     async getGroupMembers(req, res) {

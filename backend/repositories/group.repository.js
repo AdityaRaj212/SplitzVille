@@ -12,7 +12,27 @@ export default class groupRepository {
     }
 
     async getGroup(groupId) {
-        return this.group.findOne({ where: { id: groupId } });
+        try{
+            const group = await this.group.findOne({
+                where: {
+                    id: groupId
+                },
+                include: [{
+                    model: User,
+                    as: 'members',
+                    attributes: ['id', 'firstName', 'lastName', 'email', 'userName']
+                }]
+            });
+
+            if(!group){
+                throw new Error('Group not found');
+            }
+
+            return group;
+        }catch(error){
+            console.error('Error fetching group:', error);
+            throw new Error('Error fetching group');
+        }
     }
 
     async updateGroup(groupId, groupData) {
@@ -21,6 +41,32 @@ export default class groupRepository {
 
     async deleteGroup(groupId) {
         return this.group.destroy({ where: { id: groupId } });
+    }
+
+    async removeMemberFromGroup(groupId, userId) {
+        try{
+            const group = await this.group.findOne({where: {id: groupId}});
+            if(!group){
+                throw new Error('Group not found');
+            }
+
+            const user = await User.findOne({where: {id: userId}});
+            if(!user){
+                throw new Error('User not found');
+            }
+
+            const isMember = await group.hasMember(user);
+            if(!isMember){
+                throw new Error('User is not a member of the group');
+            }
+
+            await group.removeMember(user);
+
+            return group;
+        }catch(error){
+            console.error('Error removing member from group:', error);
+            throw new Error('Error removing member from group');
+        }
     }
 
     async getAllGroups() {

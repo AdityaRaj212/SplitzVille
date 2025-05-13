@@ -19,9 +19,10 @@ router.get('/user/:userId', (req, res)=>{
 router.put('/update-group', (req, res)=>{
     groupController.updateGroup(req, res);
 });
+
 router.delete('/delete-group/:groupId', (req, res)=>{
     groupController.deleteGroup(req, res);
-    });
+});
 
 router.get('/all-groups', (req, res)=>{
     groupController.getAllGroups(req, res);
@@ -31,7 +32,7 @@ router.post('/add-member/:groupId', (req, res)=>{
     groupController.addMember(req ,res);
 });
 
-router.delete('/remove-member', (req, res)=>{
+router.post('/:groupId/remove-member', (req, res)=>{
     groupController.removeMember(req, res);
 });
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, DollarSign, Calendar, UserPlus, UserMinus, TrendingUp, FileText, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,29 +51,38 @@ const GroupDetail = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isRemoveConfirmationOpen, setIsRemoveConfirmationOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ id: string, name: string } | null>(null);
 
-  // Fetch group data (replace with real API call)
-  useEffect(() => {
-    const fetchGroupData = async () => {
-      setIsLoading(true);
-      try {
-        // Simulate API call with dummy data for now
-        // In real app: const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/group/${groupId}`);
-        setTimeout(() => {
-          setGroup(dummyGroup);
-          setMembers(dummyMembers);
-          setTransactions(dummyTransactions);
-          setIsLoading(false);
-        }, 500);
-      } catch (error) {
-        toast({
-          title: "Error!",
-          description: "Failed to fetch group details.",
-          variant: "destructive",
-        });
+  const openRemoveConfirmation = (memberId: string, memberName: string) => {
+    setMemberToRemove({ id: memberId, name: memberName });
+    setIsRemoveConfirmationOpen(true);
+  };
+
+  const fetchGroupData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/group/${groupId}`);
+      // setMembers(response.data.members);
+      console.log('group members: ', response.data.group.members);
+      setMembers(response.data.group.members);
+      setTimeout(() => {
+        setGroup(dummyGroup);
+        // setMembers(dummyMembers);
+        setTransactions(dummyTransactions);
         setIsLoading(false);
-      }
-    };
+      }, 500);
+    } catch (error) {
+      toast({
+        title: "Error!",
+        description: "Failed to fetch group details.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchGroupData();
   }, [groupId, toast]);
 
@@ -184,14 +193,35 @@ const GroupDetail = () => {
       });
     }
   };
-  const handleRemoveMember = (memberId: string, memberName: string) => {
-    // Simulate removing a member (replace with real API call)
-    toast({
-      title: "Success!",
-      description: `${memberName} removed from the group.`,
-    });
-    setMembers(members.filter(m => m.id !== memberId));
-  };
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    try {
+        if (!groupId) {
+            throw new Error('Group ID is not available');
+        }
+
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/group/${groupId}/remove-member`, {
+            userId: memberId
+        });
+
+        if (response.data.success) {
+            fetchGroupData();
+            toast({
+                title: "Success!",
+                description: `${memberName} removed from the group.`,
+            });
+        } else {
+            throw new Error(response.data.message || 'Failed to remove member');
+        }
+    } catch (error) {
+        console.error('Error removing member:', error);
+        toast({
+            title: "Error!",
+            description: "Failed to remove member.",
+            variant: "destructive",
+        });
+    }
+};
+
 
   const handleSettleUp = () => {
     toast({
@@ -285,92 +315,6 @@ const GroupDetail = () => {
             <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm" onClick={handleSettleUp}>
               <TrendingUp className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" /> Settle Up
             </Button>
-
-            {/* <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
-              <DialogTrigger asChild>
-                <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm">
-                  <UserPlus className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" /> Add Member
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add New Member</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
-                  <div className="space-y-1 sm:space-y-2">
-                    <label htmlFor="searchEmail" className="text-xs sm:text-sm font-medium">Search or Invite by Email</label>
-                    <Input
-                      id="searchEmail"
-                      value={newMemberEmail}
-                      onChange={(e) => setNewMemberEmail(e.target.value)}
-                      placeholder="Type to search users or enter email to invite"
-                      className="text-xs sm:text-sm"
-                      autoComplete="off"
-                    />
-                    <p className="text-xs text-muted-foreground">Start typing to see suggestions or enter a full email to invite.</p>
-                    
-                    {newMemberEmail && (
-                      <div className="border rounded-md shadow-sm max-h-40 overflow-y-auto bg-background">
-                        
-                        {dummyMembers
-                          .filter(m => m.email.toLowerCase().includes(newMemberEmail.toLowerCase()) || m.name.toLowerCase().includes(newMemberEmail.toLowerCase()))
-                          .slice(0, 5)
-                          .map(user => (
-                            <div
-                              key={user.id}
-                              className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2 text-xs sm:text-sm"
-                              onClick={() => {
-                               
-                                toast({
-                                  title: "Success!",
-                                  description: `${user.name} added to the group!`,
-                                });
-                                setNewMemberEmail('');
-                                setIsAddMemberModalOpen(false);
-                              }}
-                            >
-                              <Avatar className="h-6 w-6 sm:h-8 sm:w-8 bg-primary/10">
-                                <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium">{user.name}</div>
-                                <div className="text-xs text-muted-foreground">{user.email}</div>
-                              </div>
-                            </div>
-                          ))}
-                        {newMemberEmail.includes('@') && (
-                          <div
-                            className="p-2 hover:bg-muted cursor-pointer text-xs sm:text-sm border-t border-muted"
-                            onClick={() => {
-                              toast({
-                                title: "Success!",
-                                description: `Invited ${newMemberEmail} to join the platform and group!`,
-                              });
-                              setNewMemberEmail('');
-                              setIsAddMemberModalOpen(false);
-                            }}
-                          >
-                            <span className="font-medium">Invite {newMemberEmail} to join</span>
-                            <div className="text-xs text-muted-foreground">This user will receive an email invitation.</div>
-                          </div>
-                        )}
-                        {newMemberEmail && dummyMembers.every(m => !m.email.toLowerCase().includes(newMemberEmail.toLowerCase()) && !m.name.toLowerCase().includes(newMemberEmail.toLowerCase())) && !newMemberEmail.includes('@') && (
-                          <div className="p-2 text-xs sm:text-sm text-muted-foreground text-center">
-                            No matching users found. Enter a full email to invite.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex justify-end gap-1 sm:gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setIsAddMemberModalOpen(false)}>Cancel</Button>
-                    <Button size="sm" onClick={handleAddMember} disabled={!newMemberEmail || !newMemberEmail.includes('@')}>
-                      Send Invite
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog> */}
             <Dialog open={isAddMemberModalOpen} onOpenChange={setIsAddMemberModalOpen}>
               <DialogTrigger asChild>
                 <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm">
@@ -558,13 +502,47 @@ const GroupDetail = () => {
   {member.balance > 0 ? '+' : ''}{member.balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
 </Badge> */}
 <Button
-  size="sm"
-  variant="ghost"
-  className="h-5 w-5 sm:h-6 sm:w-6 p-0 hover:bg-red-100 text-red-600"
-  onClick={() => handleRemoveMember(member.id, member.name)}
+    size="sm"
+    variant="ghost"
+    className="h-5 w-5 sm:h-6 sm:w-6 p-0 hover:bg-red-100 text-red-600"
+    onClick={() => openRemoveConfirmation(member.id, member.userName)}
 >
-  <UserMinus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+    <UserMinus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
 </Button>
+
+<Dialog open={isRemoveConfirmationOpen} onOpenChange={setIsRemoveConfirmationOpen}>
+    <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+            <DialogTitle>Remove Member</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+                Are you sure you want to remove <span className="font-medium text-foreground">{memberToRemove?.name}</span> from the group? This action cannot be undone.
+            </p>
+        </div>
+        <DialogFooter className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => {
+                setIsRemoveConfirmationOpen(false);
+                setMemberToRemove(null);
+            }}>
+                Cancel
+            </Button>
+            <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                    if (memberToRemove) {
+                        handleRemoveMember(memberToRemove.id, memberToRemove.name);
+                        setIsRemoveConfirmationOpen(false);
+                        setMemberToRemove(null);
+                    }
+                }}
+            >
+                Remove
+            </Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
 </div>
 </div>
 ))}
