@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, DollarSign, Calendar, UserPlus, UserMinus, TrendingUp, FileText, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
 
 // Dummy data for transactions and members (replace with real API data)
 const dummyGroup = {
@@ -39,6 +41,7 @@ const dummyTransactions = [
 ];
 
 const GroupDetail = () => {
+  const { user } = useAuth();
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -53,6 +56,13 @@ const GroupDetail = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isRemoveConfirmationOpen, setIsRemoveConfirmationOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{ id: string, name: string } | null>(null);
+  const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
+  const [expenseData, setExpenseData] = useState({
+      title: '',
+      amount: '',
+      date: '',
+      description: '',
+  });
 
   const openRemoveConfirmation = (memberId: string, memberName: string) => {
     setMemberToRemove({ id: memberId, name: memberName });
@@ -234,6 +244,58 @@ const GroupDetail = () => {
     }
 };
 
+const handleExpenseInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { name, value } = e.target;
+  setExpenseData(prev => ({ ...prev, [name]: value }));
+};
+
+const handleAddExpenseSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+      if (!groupId) {
+          throw new Error('Group ID is not available');
+      }
+      if (!expenseData.title || !expenseData.amount || !expenseData.date) {
+          toast({
+              title: "Error!",
+              description: "Please fill in all required fields.",
+              variant: "destructive",
+          });
+          return;
+      }
+
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/expense/add/${groupId}`, {
+          title: expenseData.title,
+          amount: parseFloat(expenseData.amount),
+          date: expenseData.date,
+          description: expenseData.description,
+          userId: user.id
+      });
+
+      if (response.data.success) {
+          toast({
+              title: "Success!",
+              description: "Expense added successfully.",
+          });
+          setIsAddExpenseModalOpen(false);
+          setExpenseData({ title: '', amount: '', date: '', description: '' });
+          // Assuming fetchGroupData is a function to refresh group data including transactions
+          if (typeof fetchGroupData === 'function') {
+              fetchGroupData();
+          }
+      } else {
+          throw new Error(response.data.message || 'Failed to add expense');
+      }
+  } catch (error) {
+      console.error('Error adding expense:', error);
+      toast({
+          title: "Error!",
+          description: "Failed to add expense.",
+          variant: "destructive",
+      });
+  }
+};
+
 
   const handleSettleUp = () => {
     toast({
@@ -402,9 +464,72 @@ const GroupDetail = () => {
               </DialogContent>
             </Dialog>
 
-            <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm" onClick={handleAddExpense}>
-              <Plus className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" /> Add Expense
-            </Button>
+            <Dialog open={isAddExpenseModalOpen} onOpenChange={setIsAddExpenseModalOpen}>
+              <DialogTrigger asChild>
+                  <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto text-xs sm:text-sm">
+                      <Plus className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" /> Add Expense
+                  </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                      <DialogTitle>Add New Expense</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleAddExpenseSubmit} className="space-y-4 pt-3 sm:pt-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="title">Title</Label>
+                          <Input
+                              id="title"
+                              name="title"
+                              value={expenseData.title}
+                              onChange={handleExpenseInputChange}
+                              placeholder="Expense title"
+                              required
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="amount">Amount</Label>
+                          <Input
+                              id="amount"
+                              name="amount"
+                              type="number"
+                              step="0.01"
+                              value={expenseData.amount}
+                              onChange={handleExpenseInputChange}
+                              placeholder="0.00"
+                              required
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="date">Date</Label>
+                          <Input
+                              id="date"
+                              name="date"
+                              type="date"
+                              value={expenseData.date}
+                              onChange={handleExpenseInputChange}
+                              required
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="description">Description (optional)</Label>
+                          <Input
+                              id="description"
+                              name="description"
+                              value={expenseData.description}
+                              onChange={handleExpenseInputChange}
+                              placeholder="Additional details"
+                          />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => setIsAddExpenseModalOpen(false)}>
+                              Cancel
+                          </Button>
+                          <Button type="submit">Add Expense</Button>
+                      </div>
+                  </form>
+              </DialogContent>
+          </Dialog>
+            
           </div>
         </div>
 
