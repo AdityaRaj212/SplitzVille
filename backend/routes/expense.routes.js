@@ -6,7 +6,11 @@ const expenseController = new ExpenseController();
 
 router.post('/add/:groupId', (req, res)=>{
     expenseController.addExpense(req, res);
-})
+});
+
+router.post('/remove/:expenseId', (req, res)=>{
+    expenseController.removeExpense(req, res);
+});
 
 router.get('/group/:groupId', (req, res)=>{
     expenseController.getGroupExpenses(req, res);

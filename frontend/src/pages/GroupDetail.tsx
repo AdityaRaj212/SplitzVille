@@ -9,39 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, DollarSign, Calendar, UserPlus, UserMinus, TrendingUp, FileText, Share2 } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Calendar, UserPlus, UserMinus, TrendingUp, FileText, Share2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 
-// Dummy data for transactions and members (replace with real API data)
-const dummyGroup = {
-  id: '1',
-  name: 'Roommates',
-  initials: 'RM',
-  description: 'Shared expenses for our awesome apartment!',
-  image: '',
-  memberCount: 3,
-  balance: 120.75,
-  totalSpent: 1250.50,
-  createdAt: '2023-01-15T00:00:00Z',
-};
-
-const dummyMembers = [
-  { id: 'm1', firstName: 'Alice Smith', email: 'alice@example.com', balance: 40.25, image: '' },
-  { id: 'm2', firstName: 'Bob Johnson', email: 'bob@example.com', balance: -60.50, image: '' },
-  { id: 'm3', firstName: 'Charlie Brown', email: 'charlie@example.com', balance: 20.25, image: '' },
-];
-
-const dummyTransactions = [
-  { id: 't1', description: 'Rent for October', amount: 600.00, date: '2023-10-01T00:00:00Z', paidBy: 'Alice Smith', splitAmong: ['Alice', 'Bob', 'Charlie'] },
-  { id: 't2', description: 'Groceries', amount: 120.50, date: '2023-09-28T00:00:00Z', paidBy: 'Bob Johnson', splitAmong: ['Alice', 'Bob'] },
-  { id: 't3', description: 'Internet Bill', amount: 60.00, date: '2023-09-15T00:00:00Z', paidBy: 'Charlie Brown', splitAmong: ['Alice', 'Bob', 'Charlie'] },
-  { id: 't4', description: 'Dinner Out', amount: 90.75, date: '2023-09-10T00:00:00Z', paidBy: 'Alice Smith', splitAmong: ['Alice', 'Charlie'] },
-];
-
 const GroupDetail = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -63,6 +37,45 @@ const GroupDetail = () => {
       date: '',
       description: '',
   });
+  const [currentUserId, setCurrentUserId] = useState(user?.id);
+  const [isRemoveExpenseConfirmationOpen, setIsRemoveExpenseConfirmationOpen] = useState(false);
+  const [expenseToRemove, setExpenseToRemove] = useState<{ id: string, title: string } | null>(null);
+
+  useEffect(()=>{
+    setCurrentUserId(user?.id);
+  },[isAuthenticated]);
+
+  const handleRemoveExpense = async (expenseId: string, expenseTitle: string) => {
+      try {
+          if (!groupId) {
+              throw new Error('Group ID is not available');
+          }
+  
+          const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/expense/remove/${expenseId}`, {userId: currentUserId});
+          if (response.data.success) {
+              setTransactions(prevTransactions => prevTransactions.filter(txn => txn.id !== expenseId));
+              toast({
+                  title: "Success!",
+                  description: `${expenseTitle} removed successfully.`,
+              });
+          } else {
+              throw new Error(response.data.message || 'Failed to remove expense');
+          }
+      } catch (error) {
+          console.error('Error removing expense:', error);
+          toast({
+              title: "Error!",
+              description: "Failed to remove expense.",
+              variant: "destructive",
+          });
+      }
+  };
+  
+  const openRemoveExpenseConfirmation = (expenseId: string, expenseTitle: string) => {
+      setExpenseToRemove({ id: expenseId, title: expenseTitle });
+      setIsRemoveExpenseConfirmationOpen(true);
+  };
+  
 
   const openRemoveConfirmation = (memberId: string, memberName: string) => {
     setMemberToRemove({ id: memberId, name: memberName });
@@ -84,16 +97,13 @@ const GroupDetail = () => {
         image: '',
         memberCount: response.data.group.members.length,
         balance: 120.75,
-        totalSpent: 1250.50,
+        totalSpent: response.data.group.totalSpent,
         createdAt: response.data.group.createdAt,
       });
+
+      const expenseResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/expense/group/${groupId}`);
+      setTransactions(expenseResponse.data.expenses);
       setIsLoading(false);
-      setTimeout(() => {
-        // setGroup(dummyGroup);
-        // setMembers(dummyMembers);
-        setTransactions(dummyTransactions);
-        setIsLoading(false);
-      }, 500);
     } catch (error) {
       toast({
         title: "Error!",
@@ -569,48 +579,157 @@ const handleAddExpenseSubmit = async (e: React.FormEvent) => {
           {/* Transactions Timeline */}
           <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
             <Card className="shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
-                <CardTitle className="text-sm sm:text-base md:text-lg font-medium">Recent Transactions</CardTitle>
-                <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 text-xs sm:text-sm" onClick={handleAddExpense}>
-                  Add Expense
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {transactions.length === 0 ? (
-                  <div className="text-center py-4 sm:py-6 md:py-8 text-muted-foreground">
-                    <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 mx-auto text-gray-300 mb-1 sm:mb-2" />
-                    <p className="text-xs sm:text-sm">No transactions yet. Add an expense to get started!</p>
-                  </div>
-                ) : (
-                  <div className="relative space-y-3 sm:space-y-4 md:space-y-6">
-                    {/* Timeline line */}
-                    <div className="absolute left-2 sm:left-3 md:left-4 top-0 bottom-0 w-0.5 bg-muted" />
-                    {transactions.map((txn, index) => (
-                      <div key={txn.id} className="flex items-start gap-2 sm:gap-3 md:gap-4 relative">
-                        <div className="absolute left-0 top-1 sm:top-2 -ml-2 sm:-ml-2.5 md:-ml-3.5 w-4 h-4 sm:w-5 sm:h-5 md:w-7 md:h-7 rounded-full bg-primary border-2 sm:border-3 md:border-4 border-background z-10" />
-                        <div className="ml-5 sm:ml-6 md:ml-8 flex-1 pt-0.5 sm:pt-1">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-0">
-                            <h4 className="font-medium text-xs sm:text-sm md:text-base">{txn.description}</h4>
-                            <div className="text-sm sm:text-base md:text-lg font-bold text-primary">
-                              {txn.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                            </div>
-                          </div>
-                          <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5 sm:mt-1 flex flex-wrap items-center gap-0.5 sm:gap-1 md:gap-2">
-                            <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> {formatDate(txn.date)}
-                            <span>•</span>
-                            <span>Paid by {txn.paidBy}</span>
-                            <span>•</span>
-                            <span>Split with {txn.splitAmong.join(', ')}</span>
-                          </div>
-                          {index < transactions.length - 1 && <div className="mt-1 sm:mt-2 md:mt-4 h-px bg-muted" />}
+                <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+                    <CardTitle className="text-sm sm:text-base md:text-lg font-medium">Recent Transactions</CardTitle>
+                    <Dialog open={isAddExpenseModalOpen} onOpenChange={setIsAddExpenseModalOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 text-xs sm:text-sm">
+                                <Plus className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" /> Add Expense
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                                <DialogTitle>Add New Expense</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleAddExpenseSubmit} className="space-y-4 pt-3 sm:pt-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">Title</Label>
+                                    <Input
+                                        id="title"
+                                        name="title"
+                                        value={expenseData.title}
+                                        onChange={handleExpenseInputChange}
+                                        placeholder="Expense title"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="amount">Amount</Label>
+                                    <Input
+                                        id="amount"
+                                        name="amount"
+                                        type="number"
+                                        step="0.01"
+                                        value={expenseData.amount}
+                                        onChange={handleExpenseInputChange}
+                                        placeholder="0.00"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="date">Date</Label>
+                                    <Input
+                                        id="date"
+                                        name="date"
+                                        type="date"
+                                        value={expenseData.date}
+                                        onChange={handleExpenseInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="description">Description (optional)</Label>
+                                    <Input
+                                        id="description"
+                                        name="description"
+                                        value={expenseData.description}
+                                        onChange={handleExpenseInputChange}
+                                        placeholder="Additional details"
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <Button type="button" variant="outline" onClick={() => setIsAddExpenseModalOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit">Add Expense</Button>
+                                </div>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </CardHeader>
+                <CardContent>
+                    {transactions.length === 0 ? (
+                        <div className="text-center py-4 sm:py-6 md:py-8 text-muted-foreground">
+                            <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 mx-auto text-gray-300 mb-1 sm:mb-2" />
+                            <p className="text-xs sm:text-sm">No transactions yet. Add an expense to get started!</p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
+                    ) : (
+                        <div className="relative space-y-3 sm:space-y-4 md:space-y-6">
+                            {/* Timeline line */}
+                            <div className="absolute left-2 sm:left-3 md:left-4 top-0 bottom-0 w-0.5 bg-muted" />
+                            {transactions.map((txn, index) => (
+                                <div key={txn.id} className="flex items-start gap-2 sm:gap-3 md:gap-4 relative">
+                                    <div className="absolute left-0 top-1 sm:top-2 -ml-2 sm:-ml-2.5 md:-ml-3.5 w-4 h-4 sm:w-5 sm:h-5 md:w-7 md:h-7 rounded-full bg-primary border-2 sm:border-3 md:border-4 border-background z-10" />
+                                    <div className="ml-5 sm:ml-6 md:ml-8 flex-1 pt-0.5 sm:pt-1">
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-0">
+                                            <h4 className="font-medium text-xs sm:text-sm md:text-base">{txn.description}</h4>
+                                            <div className="text-sm sm:text-base md:text-lg font-bold text-primary">
+                                                {txn.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                            </div>
+                                        </div>
+                                        <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5 sm:mt-1 flex flex-wrap items-center gap-0.5 sm:gap-1 md:gap-2">
+                                            <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> {formatDate(txn.date)}
+                                            <span>•</span>
+                                            <span>Paid by {txn.user.id===currentUserId ? "You" : txn.user.userName}</span>
+                                            {/* <span>•</span>
+                                            <span>Split with {txn.splitAmong.join(', ')}</span> */}
+                                            {txn.user.id === currentUserId && (
+                                                <>
+                                                    <span>•</span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-red-600 hover:text-red-800 p-0 h-auto text-[10px] sm:text-xs md:text-sm"
+                                                        onClick={() => openRemoveExpenseConfirmation(txn.id, txn.description)}
+                                                    >
+                                                        <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" /> Remove
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </div>
+                                        {index < transactions.length - 1 && <div className="mt-1 sm:mt-2 md:mt-4 h-px bg-muted" />}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
             </Card>
-          </div>
+        </div>
+
+        <Dialog open={isRemoveExpenseConfirmationOpen} onOpenChange={setIsRemoveExpenseConfirmationOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+                <DialogTitle>Remove Expense</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+                <p className="text-sm text-muted-foreground">
+                    Are you sure you want to remove <span className="font-medium text-foreground">{expenseToRemove?.title}</span> from the group expenses? This action cannot be undone.
+                </p>
+            </div>
+            <DialogFooter className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                    setIsRemoveExpenseConfirmationOpen(false);
+                    setExpenseToRemove(null);
+                }}>
+                    Cancel
+                </Button>
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                        if (expenseToRemove) {
+                            handleRemoveExpense(expenseToRemove.id, expenseToRemove.title);
+                            setIsRemoveExpenseConfirmationOpen(false);
+                            setExpenseToRemove(null);
+                        }
+                    }}
+                >
+                    Remove
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 
           {/* Members Sidebar */}
           <div className="space-y-3 sm:space-y-4 md:space-y-6">

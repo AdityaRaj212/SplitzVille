@@ -19,6 +19,11 @@ const Group = sequelize.define("Group", {
         type: DataTypes.UUID,
         allowNull: false,
     }, 
+    totalSpent: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0.0, 
+    },
     createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
